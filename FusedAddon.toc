@@ -1,0 +1,8 @@
+## Interface: 60200
+## Title: Fused Addon
+## Version: 0.8
+## SavedVariables: FusedAddonDB
+## Author: Doomruller
+
+embeds.xml
+LootFrame.xml

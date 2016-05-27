@@ -1,9 +1,12 @@
-local fusedAddon = LibStub("AceAddon-3.0"):NewAddon("fusedAddon","AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0", "AceSerializer-3.0", "AceHook-3.0", "AceTimer-3.0");
+fusedAddon = LibStub("AceAddon-3.0"):NewAddon("fusedAddon","AceConsole-3.0", "AceEvent-3.0", "AceComm-3.0", "AceSerializer-3.0", "AceHook-3.0", "AceTimer-3.0");
 
 local mainFrame;
 local itemsWindow;
-local responseWindow;
-local childFrame;
+local responseW
+local currentItem;
+local eleigableLooters;
+local timerCount;
+local timer;
 local popupFrame;
 local popupItems = {};
 
@@ -11,12 +14,11 @@ local popupItems = {};
 local itemBank;
 local addonPrefix = "FCPREFIX";
 local options;
-local currentItem;
 
 local dbProfile;
 local dbDefaults = {
 
-    profile = {
+	profile = {
       options = {
         numOfResponseButtons = 7,
         responseButtonNames = {"Bis", "Major","Minor", "Reroll", "OffSpec", "Transmog", "Pass"},
@@ -27,47 +29,71 @@ local dbDefaults = {
 
 };
 
+function fusedAddon:createPopupFrame()
+  local tempMainFrame = CreateFrame("Frame", nil, UIParent, "FC_MainLootFrame");
 
-
-function fusedAddon:OnInitialize()
-  mainFrame = CreateFrame("Frame", nil, UIParent, "FC_MainFrame");
-  popupFrame = CreateFrame("Frame", nil, UIParent, "FC_MainLootFrame");
-  itemsWindow = CreateFrame("Frame", nil, getglobal("FC_ItemsWindow"));
-  getglobal("FC_ItemsWindow"):SetScrollChild(itemsWindow);
-  responseWindow = getglobal("FC_responseWindow");
-  childFrame = CreateFrame("Frame",nil, responseWindow);
-  childFrame:SetSize(800,800);
-  responseWindow:SetScrollChild(childFrame);
-
-  itemBank ={};
-
-  self.db = LibStub("AceDB-3.0"):New("FusedAddonDB",dbDefaults, true);
-  self.db:RegisterDefaults(dbDefaults);
-  dbProfile = self.db.profile;
-
-  local popup = CreateFrame("Frame", "FC_Popup1", popupFrame, "FC_ResponseFrame");
-  popup:SetPoint("Topleft");
-  popup.buttons = {};
+  local tempFrame = CreateFrame("Frame", "FC_Popup1", tempMainFrame, "FC_ResponseFrame");
+  tempFrame:SetPoint("Topleft");
+  tempFrame.buttons = {};
   for i=1, 7 do
-    local button = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate");
+    local button = CreateFrame("Button", nil, tempFrame, "UIPanelButtonTemplate");
     button:Hide();
-    button:SetPoint("bottomleft", 70 + (95 * (i-1)), 35);
+    button:SetPoint("bottomleft", 70 + (95 * (i - 1)), 35);
     button:SetSize(80,25);
-    table.insert(popup.buttons, button);
+    table.insert(tempFrame.buttons, button);
   end
 
   for i=2, 5 do
-    popup = CreateFrame("Frame", "FC_Popup" .. i, popupFrame, "FC_ResponseFrame");
-    popup:SetPoint("Top","FC_Popup" .. (i-1), "Bottom");
-    popup.buttons = {};
+    tempFrame = CreateFrame("Frame", "FC_Popup" .. i, tempMainFrame, "FC_ResponseFrame");
+    tempFrame:SetPoint("Top","FC_Popup" .. (i-1), "Bottom");
+    tempFrame.buttons = {};
     for k=1, 7 do
-      local button = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate");
+      local button = CreateFrame("Button", nil, tempFrame, "UIPanelButtonTemplate");
       button:Hide();
       button:SetPoint("bottomleft", 70 + (95 * (k-1)), 35);
       button:SetSize(80,25);
-      table.insert(popup.buttons, button);
+      table.insert(tempFrame.buttons, button);
     end
   end
+
+  return tempMainFrame;
+end
+function fusedAddon:createItemsWindow()
+  local itemsWindow = getglobal("FC_ItemsWindow");
+  local itemsWindowChild = CreateFrame("Frame", nil, itemsWindow);
+  itemsWindow:SetScrollChild(itemsWindowChild);
+
+  local frame = CreateFrame("Frame", "FC_windowFrame1", itemsWindowChild, "FC_ItemFrame");
+  frame:SetPoint("TopLeft",10,-10);
+  frame:Hide();
+
+  for i=2, 10 do
+    local frame = CreateFrame("Frame", "FC_windowFrame"..i, itemsWindowChild, "FC_ItemFrame");
+    frame:SetPoint("Top","FC_windowFrame" .. (i-1), "Bottom");
+    frame:Hide();
+  end
+  return itemsWindow;
+end
+
+function fusedAddon:createResponseWindow()
+  local tempFrame = getglobal("FC_responseWindow");
+  local childFrame = CreateFrame("Frame",nil, tempFrame);
+  childFrame:SetSize(800,800);
+  tempFrame:SetScrollChild(childFrame);
+  local frame = CreateFrame("Frame", "FC_entry1",childFrame, "FC_ResponseEntry");
+  frame:SetPoint("TopLeft",10,-10);
+  frame:Hide();
+
+  for i=2, 40 do
+    local frame = CreateFrame("Frame", "FC_entry"..i, childFrame, "FC_ResponseEntry");
+    frame:SetPoint("Top","FC_entry" .. (i-1), "Bottom");
+    frame:Hide();
+  end
+  return tempFrame;
+end
+
+function fusedAddon:createMainFrame()
+  local tempMain = CreateFrame("Frame", nil, UIParent, "FC_MainFrame");
 
   getglobal("FC_currentItemFrame"):SetScript("OnEnter", function()
     GameTooltip:SetOwner(getglobal("FC_currentItemFrame"), "ANCHOR_RIGHT")
@@ -80,27 +106,22 @@ function fusedAddon:OnInitialize()
   getglobal("FC_currentItemFrame"):SetScript("OnLeave", function()
     GameTooltip:Hide()
   end);
+  return tempMain;
+end
+function fusedAddon:OnInitialize()
+  mainFrame = fusedAddon:createMainFrame();
 
-  local frame = CreateFrame("Frame", "FC_windowFrame1", itemsWindow, "FC_ItemFrame");
-  frame:SetPoint("TopLeft",10,-10);
-  frame:Hide();
+  popupFrame = fusedAddon:createPopupFrame();
 
-  for i=2, 10 do
-    local frame = CreateFrame("Frame", "FC_windowFrame"..i, itemsWindow, "FC_ItemFrame");
-    frame:SetPoint("Top","FC_windowFrame" .. (i-1), "Bottom");
-    frame:Hide();
-  end
+  itemsWindow = fusedAddon:createItemsWindow();
 
-  local frame = CreateFrame("Frame", "FC_entry1",childFrame, "FC_ResponseEntry");
-  frame:SetPoint("TopLeft",10,-10);
-  frame:Hide();
+  responseWindow = fusedAddon:createResponseWindow();
 
-  for i=2, 40 do
-    local frame = CreateFrame("Frame", "FC_entry"..i, childFrame, "FC_ResponseEntry");
-    frame:SetPoint("Top","FC_entry" .. (i-1), "Bottom");
-    frame:Hide();
-  end
+  itemBank ={};
 
+  self.db = LibStub("AceDB-3.0"):New("FusedAddonDB",dbDefaults, true);
+  self.db:RegisterDefaults(dbDefaults);
+  dbProfile = self.db.profile;
 end
 
 function fusedAddon:OnEnable()
@@ -127,9 +148,6 @@ function fusedAddon:OnEnable()
     else
       print("No cmd was entered");
     end
-
-
-
   end);
 
 
@@ -320,53 +338,67 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
             options= payload["options"];
             table.insert(popupItems, payload["itemBank"][i]);
           end
-
+			fusedAddon:popupUpdate();
         end
-
+        local ack = {cmd="ack", id=0};
+        local serializedAck = fusedAddon:Serialize(ack);
+        fusedAddon:SendCommMessage(addonPrefix, serializedAck, "WHISPER", sender);
       elseif payload["cmd"] == "response" then
 
 
         local item = fusedAddon:findItem(payload["response"]["itemLink"]);
         table.insert(item["responses"], payload["response"]);
-        
+
       elseif payload["cmd"] == "vote" then
-      print(payload["vote"]["item"]["itemLink"])
+        print(payload["vote"]["item"]["itemLink"])
         local item = fusedAddon:findItem(payload["vote"]["item"]["itemLink"]);
-            if item then
-                for i=1, #item["responses"]do
-                  if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
-                    table.insert(item["responses"][i]["votes"], payload["vote"]["from"]);
-                  end
-                end
+        if item then
+          for i=1, #item["responses"]do
+            if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
+              table.insert(item["responses"][i]["votes"], payload["vote"]["from"]);
             end
+          end
+        end
       elseif payload["cmd"] == "unvote" then
         local item = fusedAddon:findItem(payload["vote"]["item"]["itemLink"]);
         print(payload["vote"]["item"]["itemName"])
         local index;
-            if item then
-                for i=1, #item["responses"]do
-                print(item["responses"][i]["player"]["name"] .. " " .. payload["vote"]["to"])
-                  if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
-                      for k=1, #item["responses"][i]["votes"] do
-                        if item["responses"][i]["votes"][k] == payload["vote"]["from"] then
-                          index =k;
-                          print(k)
-                        end
-                      end
-                       if index then
-                 table.remove(item["responses"][i]["votes"], index);
+        if item then
+          for i=1, #item["responses"]do
+            print(item["responses"][i]["player"]["name"] .. " " .. payload["vote"]["to"])
+            if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
+              for k=1, #item["responses"][i]["votes"] do
+                if item["responses"][i]["votes"][k] == payload["vote"]["from"] then
+                  index =k;
+                  print(k)
                 end
-                  end
-               
-                end
-                
+              end
+              if index then
+                table.remove(item["responses"][i]["votes"], index);
+              end
             end
-      end
+
+          end
+       
+        end
+      elseif payload["cmd"] =="ack" then
+        local index = 0;
+        for i =1, #elegableLooters do
+          if eleigableLooters == sender then
+            index = i;
+          end
+        end
+        if index > 0 then
+			print("removing " .. sender)
+          table.remove(eleigableLooterse, index);
+        end
+        
+      end -- end if cmd == ......
       fusedAddon:update();
-    end
+    end -- end succes deserialize
 
 
-  end
+  end -- matching prefix
 
 end
 
@@ -374,7 +406,8 @@ function fusedAddon:OnDisable()
 
 end
 
-function fusedAddon:update()
+
+function fusedAddon:popupUpdate()
   if #popupItems > 0 then
     popupFrame:Show();
     -- clear old
@@ -395,191 +428,186 @@ function fusedAddon:update()
     popupFrame:Hide();
   end -- end of popup stuff
 
-  -- main window stuff
-  if not currentItem and #itemBank > 0 then
-    currentItem = itemBank[1];
+end
+
+
+
+local function updateEntrys()
+  for i=1, 40 do
+    getglobal("FC_entry" .. i):Hide();
+    getglobal("FC_entry" .. i .. "ItemFrame"):Hide();
+    getglobal("FC_entry" .. i .. "ItemFrameDuo1"):Hide();
+    getglobal("FC_entry" .. i .. "ItemFrameDuo2"):Hide();
+    getglobal("FC_entry" .. i .."NoteFrameNoteTexture"):SetTexture("Interface\\CHATFRAME\\UI-ChatIcon-Chat-Disabled");
+    getglobal("FC_entry" .. i .. "VoteButton"):SetText("Vote");
   end
-
-  if #itemBank == 0 then
-    currentItem = nil;
+  for i=1, 40 do
+    getglobal("FC_entry" .. i):Hide();
+    getglobal("FC_entry" .. i .. "ItemFrame"):Hide();
+    getglobal("FC_entry" .. i .. "ItemFrameDuo1"):Hide();
+    getglobal("FC_entry" .. i .. "ItemFrameDuo2"):Hide();
+    getglobal("FC_entry" .. i .."NoteFrameNoteTexture"):SetTexture("Interface\\CHATFRAME\\UI-ChatIcon-Chat-Disabled");
+    getglobal("FC_entry" .. i .. "VoteButton"):SetText("Vote");
   end
+  for i=1, #currentItem["responses"] do
+    getglobal("FC_entry" .. i):Show();
 
-  if currentItem then
-    getglobal("FC_CurrentItemLabel"):SetText(currentItem["itemLink"]);
-    getglobal("FC_CurrentItemIlvlLabel"):SetText("ilvl: " .. currentItem["itemLevel"]);
-    getglobal("FC_CurrentItemTypeLabel"):SetText(currentItem["itemSubType"] .. " " .. _G[currentItem["itemEquipLoc"]] );
+    local votesFrame = getglobal("FC_entry" .. i .. "VotesFrame");
+    votesFrame:SetScript("OnEnter", function()
+      GameTooltip:SetOwner(votesFrame, "ANCHOR_RIGHT")
+      if currentItem then
+        local votes ="";
 
-    getglobal("FC_currentItemFrameTexture"):SetTexture(currentItem["itemTexture"]);
-    for i=1, 40 do
-      getglobal("FC_entry" .. i):Hide();
-      getglobal("FC_entry" .. i .. "ItemFrame"):Hide();
-      getglobal("FC_entry" .. i .. "ItemFrameDuo1"):Hide();
-      getglobal("FC_entry" .. i .. "ItemFrameDuo2"):Hide();
-      getglobal("FC_entry" .. i .."NoteFrameNoteTexture"):SetTexture("Interface\\CHATFRAME\\UI-ChatIcon-Chat-Disabled");
-      getglobal("FC_entry" .. i .. "VoteButton"):SetText("Vote");
-    end
-    for i=1, #currentItem["responses"] do
-      getglobal("FC_entry" .. i):Show();
-      
-      local votesFrame = getglobal("FC_entry" .. i .. "VotesFrame");
-      votesFrame:SetScript("OnEnter", function()
-          GameTooltip:SetOwner(votesFrame, "ANCHOR_RIGHT")
-          if currentItem then
-            local votes ="";
-            
-            for k=1, #currentItem["responses"][i]["votes"] do
-              if k > 1 then
-              votes = votes .. ", " .. currentItem["responses"][i]["votes"][k];
-              else
-              votes = votes ..currentItem["responses"][i]["votes"][k];
-              end
-              
-            end
-            GameTooltip:SetText(votes);
-            GameTooltip:Show()
+        for k=1, #currentItem["responses"][i]["votes"] do
+          if k > 1 then
+            votes = votes .. ", " .. currentItem["responses"][i]["votes"][k];
+          else
+            votes = votes ..currentItem["responses"][i]["votes"][k];
           end
 
-        end);
-        votesFrame:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end);
-      
-        getglobal("FC_entry" .. i .. "VotesFrameVotesString"):SetText(#currentItem["responses"][i]["votes"]);
-        
-        
-      for k=1, #currentItem["responses"][i]["votes"] do
-        if currentItem["responses"][i]["votes"][k] == UnitName("player") then
-          getglobal("FC_entry" .. i .. "VoteButton"):SetText("Unvote");
-
         end
+        GameTooltip:SetText(votes);
+        GameTooltip:Show()
+      end
+
+    end);
+    votesFrame:SetScript("OnLeave", function()
+      GameTooltip:Hide()
+    end);
+
+    getglobal("FC_entry" .. i .. "VotesFrameVotesString"):SetText(#currentItem["responses"][i]["votes"]);
+
+
+    for k=1, #currentItem["responses"][i]["votes"] do
+      if currentItem["responses"][i]["votes"][k] == UnitName("player") then
+        getglobal("FC_entry" .. i .. "VoteButton"):SetText("Unvote");
 
       end
 
-      getglobal("FC_entry" .. i .. "VoteButton"):SetScript("OnClick", function(self)
-        if self:GetText() == "Vote" then
-          if not fusedAddon:hasVoteFrom(currentItem, UnitName("player")) then
-            local payload = {cmd="vote", vote = {from = UnitName("player"), to = currentItem["responses"][i]["player"]["name"], item = currentItem }};
-            local serializedPayload = fusedAddon:Serialize(payload);
-            fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "RAID");
-            
-          end
-        else
-          local payload = {cmd="unvote", vote = {from = UnitName("player"), to = currentItem["responses"][i]["player"]["name"], item = currentItem }};
+    end
+
+    getglobal("FC_entry" .. i .. "VoteButton"):SetScript("OnClick", function(self)
+      if self:GetText() == "Vote" then
+        if not fusedAddon:hasVoteFrom(currentItem, UnitName("player")) then
+          local payload = {cmd="vote", vote = {from = UnitName("player"), to = currentItem["responses"][i]["player"]["name"], item = currentItem }};
           local serializedPayload = fusedAddon:Serialize(payload);
           fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "RAID");
+
+        end
+      else
+        local payload = {cmd="unvote", vote = {from = UnitName("player"), to = currentItem["responses"][i]["player"]["name"], item = currentItem }};
+        local serializedPayload = fusedAddon:Serialize(payload);
+        fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "RAID");
+      end
+
+
+    end);
+
+
+    getglobal("FC_entry" .. i .."NoteFrame");
+    if currentItem["responses"][i]["note"] ~= "" then
+      local noteFrame = getglobal("FC_entry" .. i .."NoteFrame");
+      getglobal("FC_entry" .. i .."NoteFrameNoteTexture"):SetTexture("Interface\\CHATFRAME\\UI-ChatIcon-Chat-Up");
+
+      noteFrame:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(noteFrame, "ANCHOR_RIGHT")
+        if currentItem then
+          GameTooltip:SetText(currentItem["responses"][i]["note"]);
+          GameTooltip:Show()
         end
 
-
+      end);
+      noteFrame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
       end);
 
 
-      getglobal("FC_entry" .. i .."NoteFrame");
-      if currentItem["responses"][i]["note"] ~= "" then
-        local noteFrame = getglobal("FC_entry" .. i .."NoteFrame");
-        getglobal("FC_entry" .. i .."NoteFrameNoteTexture"):SetTexture("Interface\\CHATFRAME\\UI-ChatIcon-Chat-Up");
-
-        noteFrame:SetScript("OnEnter", function()
-          GameTooltip:SetOwner(noteFrame, "ANCHOR_RIGHT")
-          if currentItem then
-            GameTooltip:SetText(currentItem["responses"][i]["note"]);
-            GameTooltip:Show()
-          end
-
-        end);
-        noteFrame:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end);
-
-
-      end
+    end
 
 
 
 
-      getglobal("FC_entry" .. i .. "ClassIcon"):SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES");
-      print(currentItem["responses"][i]["player"]["class"]);
-      local coords = CLASS_ICON_TCOORDS[currentItem["responses"][i]["player"]["class"]];
-      getglobal("FC_entry" .. i .. "ClassIcon"):SetTexCoord(unpack(coords));
+    getglobal("FC_entry" .. i .. "ClassIcon"):SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES");
+    print(currentItem["responses"][i]["player"]["class"]);
+    local coords = CLASS_ICON_TCOORDS[currentItem["responses"][i]["player"]["class"]];
+    getglobal("FC_entry" .. i .. "ClassIcon"):SetTexCoord(unpack(coords));
 
-      getglobal("FC_entry" .. i .. "CharName"):SetText(currentItem["responses"][i]["player"]["name"]);
-      getglobal("FC_entry" .. i .. "Ilvl"):SetText(currentItem["responses"][i]["player"]["ilvl"]);
-      getglobal("FC_entry" .. i .. "Score"):SetText(currentItem["responses"][i]["player"]["score"]);
-      getglobal("FC_entry" .. i .. "Rank"):SetText(currentItem["responses"][i]["player"]["guildRank"]);
-      getglobal("FC_entry" .. i .. "Response"):SetText(currentItem["responses"][i]["response"]);
+    getglobal("FC_entry" .. i .. "CharName"):SetText(currentItem["responses"][i]["player"]["name"]);
+    getglobal("FC_entry" .. i .. "Ilvl"):SetText(currentItem["responses"][i]["player"]["ilvl"]);
+    getglobal("FC_entry" .. i .. "Score"):SetText(currentItem["responses"][i]["player"]["score"]);
+    getglobal("FC_entry" .. i .. "Rank"):SetText(currentItem["responses"][i]["player"]["guildRank"]);
+    getglobal("FC_entry" .. i .. "Response"):SetText(currentItem["responses"][i]["response"]);
 
-      if #currentItem["responses"][i]["currentItems"] == 1 then
-        local itemFrame = getglobal("FC_entry" .. i .. "ItemFrame");
-        itemFrame:Show();
-        getglobal("FC_entry" .. i .. "ItemFrameTexture"):SetTexture(currentItem["responses"][i]["currentItems"][1]["itemTexture"]);
-
-
-        itemFrame:SetScript("OnEnter", function()
-          GameTooltip:SetOwner(itemFrame, "ANCHOR_RIGHT")
-          if currentItem then
-            GameTooltip:SetHyperlink(currentItem["responses"][i]["currentItems"][1]["itemLink"]);
-            GameTooltip:Show()
-          end
-
-        end);
-        itemFrame:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end);
-      elseif #currentItem["responses"][i]["currentItems"] == 2 then
-        local itemFrame = getglobal("FC_entry" .. i .. "ItemFrameDuo1");
-        itemFrame:Show();
-        getglobal("FC_entry" .. i .. "ItemFrameDuo1Texture"):SetTexture(currentItem["responses"][i]["currentItems"][1]["itemTexture"]);
+    if #currentItem["responses"][i]["currentItems"] == 1 then
+      local itemFrame = getglobal("FC_entry" .. i .. "ItemFrame");
+      itemFrame:Show();
+      getglobal("FC_entry" .. i .. "ItemFrameTexture"):SetTexture(currentItem["responses"][i]["currentItems"][1]["itemTexture"]);
 
 
-        itemFrame:SetScript("OnEnter", function()
-          GameTooltip:SetOwner(itemFrame, "ANCHOR_RIGHT")
-          if currentItem then
-            GameTooltip:SetHyperlink(currentItem["responses"][i]["currentItems"][1]["itemLink"]);
-            GameTooltip:Show()
-          end
+      itemFrame:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(itemFrame, "ANCHOR_RIGHT")
+        if currentItem then
+          GameTooltip:SetHyperlink(currentItem["responses"][i]["currentItems"][1]["itemLink"]);
+          GameTooltip:Show()
+        end
 
-        end);
-        itemFrame:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end);
-
-        itemFrame = getglobal("FC_entry" .. i .. "ItemFrameDuo2");
-        itemFrame:Show();
-        getglobal("FC_entry" .. i .. "ItemFrameDuo2Texture"):SetTexture(currentItem["responses"][i]["currentItems"][2]["itemTexture"]);
-
-
-        itemFrame:SetScript("OnEnter", function()
-          GameTooltip:SetOwner(itemFrame, "ANCHOR_RIGHT")
-          if currentItem then
-            GameTooltip:SetHyperlink(currentItem["responses"][i]["currentItems"][2]["itemLink"]);
-            GameTooltip:Show()
-          end
-
-        end);
-        itemFrame:SetScript("OnLeave", function()
-          GameTooltip:Hide()
-        end);
+      end);
+      itemFrame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+      end);
+    elseif #currentItem["responses"][i]["currentItems"] == 2 then
+      local itemFrame = getglobal("FC_entry" .. i .. "ItemFrameDuo1");
+      itemFrame:Show();
+      getglobal("FC_entry" .. i .. "ItemFrameDuo1Texture"):SetTexture(currentItem["responses"][i]["currentItems"][1]["itemTexture"]);
 
 
+      itemFrame:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(itemFrame, "ANCHOR_RIGHT")
+        if currentItem then
+          GameTooltip:SetHyperlink(currentItem["responses"][i]["currentItems"][1]["itemLink"]);
+          GameTooltip:Show()
+        end
+
+      end);
+      itemFrame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+      end);
+
+      itemFrame = getglobal("FC_entry" .. i .. "ItemFrameDuo2");
+      itemFrame:Show();
+      getglobal("FC_entry" .. i .. "ItemFrameDuo2Texture"):SetTexture(currentItem["responses"][i]["currentItems"][2]["itemTexture"]);
 
 
-      else
-        getglobal("FC_entry" .. i .. "ItemFrameTexture"):SetTexture("Interface\\InventoryItems\\WowUnknownItem01");
+      itemFrame:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(itemFrame, "ANCHOR_RIGHT")
+        if currentItem then
+          GameTooltip:SetHyperlink(currentItem["responses"][i]["currentItems"][2]["itemLink"]);
+          GameTooltip:Show()
+        end
 
-      end
+      end);
+      itemFrame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+      end);
+
+
+
+
+    else
+      getglobal("FC_entry" .. i .. "ItemFrameTexture"):SetTexture("Interface\\InventoryItems\\WowUnknownItem01");
 
     end
-  else
-    getglobal("FC_CurrentItemLabel"):SetText("Current Item Label");
-    getglobal("FC_CurrentItemIlvlLabel"):SetText("ilvl: 865");
-    getglobal("FC_CurrentItemTypeLabel"):SetText("Item Type");
-    getglobal("FC_currentItemFrameTexture"):SetTexture();
 
   end
+
+end
+local function updateItemsWindow()
   for i=1, 10 do
     getglobal("FC_windowFrame"..i):Hide();
   end
+  
   for i=1, #itemBank do
-    itemsWindow:SetSize(70, 55 * i);
+    itemsWindow:GetScrollChild():SetSize(70, 55 * i);
     getglobal("FC_windowFrame"..i .. "Texture"):SetTexture(itemBank[i]["itemTexture"]);
     local frame = getglobal("FC_windowFrame"..i);
     frame:Show();
@@ -598,6 +626,38 @@ function fusedAddon:update()
     end);
 
   end
+
+end
+function fusedAddon:update()
+
+
+  -- main window stuff
+  if not currentItem and #itemBank > 0 then
+    currentItem = itemBank[1];
+  end
+
+  if #itemBank == 0 then
+    currentItem = nil;
+  end
+
+  if currentItem then
+    getglobal("FC_CurrentItemLabel"):SetText(currentItem["itemLink"]);
+    getglobal("FC_CurrentItemIlvlLabel"):SetText("ilvl: " .. currentItem["itemLevel"]);
+    getglobal("FC_CurrentItemTypeLabel"):SetText(currentItem["itemSubType"] .. " " .. _G[currentItem["itemEquipLoc"]] );
+    getglobal("FC_currentItemFrameTexture"):SetTexture(currentItem["itemTexture"]);
+    
+    updateEntrys();
+
+  else
+    getglobal("FC_CurrentItemLabel"):SetText("Current Item Label");
+    getglobal("FC_CurrentItemIlvlLabel"):SetText("ilvl: 865");
+    getglobal("FC_CurrentItemTypeLabel"):SetText("Item Type");
+    getglobal("FC_currentItemFrameTexture"):SetTexture();
+
+  end
+  
+  updateItemsWindow();
+  
 
 end
 
@@ -761,12 +821,28 @@ function fusedAddon:test(itemTable)
     end
 
   end
-
+  for i=1, 40 do
+    if GetMasterLootCandidate(i) then
+      eleigableLooters ={};
+      table.insert(eleigableLooters, GetMasterLootCandidate(i));
+    end
+  end
   -- send off list
   local payload = {cmd="itemBank", itemBank= itemBank , options = dbProfile.options};
   local serializedPayload = fusedAddon:Serialize(payload);
   fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "RAID");
-
+  timer = self:ScheduleRepeatingTimer(function() 
+    timerCount = timerCount +1;
+    for i=1, #eleigableLooters do
+      fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "WHISPER", eleigableLooters[i]);
+    end
+    if timerCount == 4 then
+      self:CancelTimer(timer);
+    end
+  
+  
+  
+  end, 2);
 
   fusedAddon:update();
 end
@@ -780,7 +856,46 @@ function fusedAddon:findItem(itemLink)
 
   return nil;
 end
+function fusedAddon:sort( sortFunc)
+  local table = currentItem["responses"];
+  -- if the table is alreaded sorted isSorted will stay true
+  local isSorted = true;
 
+  if optionsTable == nil then
+    for i=1, #table-1 do
+      local j=i;
+      while j > 0 and sortFunc(table[j], table[j+1]) do
+        isSorted = false;
+        local temp = table[j];
+        table[j] = table[j+1];
+        table[j+1] = temp;
+        j=j-1;
+      end
+    end
+
+  else
+
+    for i=1, #table-1 do
+      local j=i;
+      while j > 0 and sortFunc(table[j], table[j+1], optionsTable) do
+        isSorted = false;
+        local temp = table[j];
+        table[j] = table[j+1];
+        table[j+1] = temp;
+        j=j-1;
+      end
+    end
+  end
+  -- if it was already sorted reverse the list
+  if isSorted then
+    for i=1, #table/2 do
+      local temp = table[i];
+      table[i] = table[#table - (i-1)]
+      table[#table - (i-1)] = temp;
+    end
+  end
+
+end
 function fusedAddon:addItem(itemLink)
   local itemName, _ , itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture = GetItemInfo(itemLink);
   local item = {
@@ -804,11 +919,209 @@ function fusedAddon:addItem(itemLink)
 end
 
 
+FC_Utils ={
+  nameCompare = function(response1, response2)
+    return response1["player"]["name"] > response2["player"]["name"];
+
+  end;
+
+  ilvlCompare = function(response1, response2)
+    return response1["player"]["ilvl"] > response2["player"]["ilvl"];
+  end;
+
+  scoreCompare = function(response1, response2)
+    return response1["player"]["score"] > response2["player"]["score"];
+  end;
+
+  itemCompare = function(response1, response2)
+    local response1ilvl;
+    local response2ilvl;
+    if #response1["currentItems"] > 1 then
+      local itemlvl1 = select(4,GetItemInfo(response1["currentItems"][1]));
+      local itemlvl2 = select(4,GetItemInfo(response1["currentItems"][2]));
+      if itemlvl1 == nil or itemlvl2 == nil then
+        response1ilvl = 0;
+      else
+        response1ilvl = itemlvl1 /itemlvl2;
+      end
+
+    else
+      response1ilvl = select(4,GetItemInfo(response1["currentItems"][1])) or  0;
+    end
+
+    if #response2["currentItems"] > 1 then
+      local itemlvl1 = select(4,GetItemInfo(response1["currentItems"][1]));
+      local itemlvl2 = select(4,GetItemInfo(response1["currentItems"][2]));
+      if itemlvl1 == nil or itemlvl2 == nil then
+        response2ilvl = 0;
+      else
+        response2ilvl = itemlvl1 /itemlvl2;
+      end
+
+    else
+      response2ilvl = select(4,GetItemInfo(response1["currentItems"][1])) or  0;
+    end
+
+    return response1ilvl > response2ilvl;
+
+  end;
+
+  rankCompare = function(response1, response2)
+    -- possible break, api function returns nil if target is in loading screen
+    local playerRank1 = select(3, GetGuildInfo(response1["player"]["name"]));
+    local playerRank2 = select(3, GetGuildInfo(response2["player"]["name"]));
+    -- GM is rank 0 lowest rank should be highest num
+    print(playerRank1.. " " ..playerRank2)
+    return playerRank1 < playerRank2;
+
+  end;
+
+  responseCompare = function(response1, response2)
+    -- prob need to do options here?
+    local index1 = options.numOfResponseButtons;
+    local index2 = options.numOfResponseButtons;
+    for i=1, options.numOfResponseButtons do
+      if response1["response"] == options.responseButtonNames[i] then
+        index1 = i;
+      end
+      if response2["response"] == options.responseButtonNames[i] then
+        index2 = i;
+      end
+    end
+    return index1 < index2;
+  end;
+
+  noteCompare = function(response1, response2)
+    return response1["note"] ~= "" and response2["note"] == "";
+  end;
+
+  votesCompare = function(response1,response2)
+    return #response1["votes"] > #response2["votes"];
+  end;
+
+  tableContains = function(table,element)
+    local flag  = false;
+    for i=1, #table do
+      if table[i] == element then
+        flag = true;
+      end
+    end
+    return flag;
+  end;
+
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 --local tempFrame = CreateFrame("Frame", nil, responseWindow, "FC_ResponseEntry");
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- will need for later
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 --currentItemTexture:SetTexture("Interface\\ICONS\\inv_sword_2h_felfireraid_d_01");

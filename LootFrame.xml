@@ -299,7 +299,7 @@
 	<Frame name="FC_MainFrame" parent="UIParent" virtual="true" toplevel="true" movable="true" enableMouse="true">
 
 		<Size>
-			<AbsDimension x="925" y="450"/>
+			<AbsDimension x="950" y="450"/>
 		</Size>
 
 		<Anchors>
@@ -337,7 +337,7 @@
 					<Anchors>
 						<Anchor point="topright">
 							<Offset>
-								<AbsDimension x="0" y="-25"/>
+								<AbsDimension x="1" y="-25"/>
 							</Offset>
 						</Anchor>
 					</Anchors>
@@ -345,7 +345,7 @@
 				</Texture>
 				<Texture file="Interface\DialogFrame\DialogFrame-Bot">
 					<Size>
-						<AbsDimension x="900" y="8"/>
+						<AbsDimension x="925" y="8"/>
 					</Size>
 					<Anchors>
 						<Anchor point="topleft">
@@ -376,19 +376,19 @@
 			<Layer level="overlay">
 				<FontString name="FC_CurrentItemLabel" inherits="GameFontNormalLarge" text="Current Item Label">
 					<Anchors>
-						<Anchor point="bottomleft"  x="135" y="375" />
+						<Anchor point="bottomleft"  x="160" y="375" />
 					</Anchors>
 				</FontString>
 				
 				<FontString name="FC_CurrentItemIlvlLabel" inherits="GameFontNormal" text="ilvl: 865">
 					<Anchors>
-						<Anchor point="bottomleft"  x="135" y="355" />
+						<Anchor point="bottomleft"  x="160" y="355" />
 					</Anchors>
 				</FontString>
 				
 				<FontString name="FC_CurrentItemTypeLabel" inherits="GameFontNormal" text="Item Type">
 					<Anchors>
-						<Anchor point="bottomleft"  x="200" y="355" />
+						<Anchor point="bottomleft"  x="225" y="355" />
 					</Anchors>
 				</FontString>
 			</Layer>
@@ -402,19 +402,10 @@
 					<AbsDimension x="70" y="300"/>
 				</Size>
 				<Anchors>
-					<Anchor point="bottomleft" x="-80" y="20"/>
+					<Anchor point="bottomleft" x="10" y="20"/>
 				</Anchors>
 				
-				<Backdrop edgeFile="Interface\DialogFrame\UI-DialogBox-Border">
-					<EdgeSize>
-						<AbsValue val="16"/>
-					</EdgeSize>
-					<Color  r="1" g="1" b="1" />
-					<BackgroundInsets>
-						<AbsInset left="5" right="5" top="5" bottom="5" />
-					</BackgroundInsets>
-
-				</Backdrop>
+				
 				
 				
 					
@@ -426,7 +417,7 @@
 
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="75" y="350"/>						
+						<Offset x="100" y="350"/>						
 					</Anchor>				
 				</Anchors>
 
@@ -459,14 +450,14 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="90" y="325" />
+						<Offset x="115" y="325" />
 					</Anchor>
 				</Anchors>
 
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.nameCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -477,14 +468,14 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="295" y="325" />
+						<Offset x="320" y="325" />
 					</Anchor>
 				</Anchors>
 
 
 				<Scripts>
 					<OnClick>
-
+						
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -495,7 +486,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="360" y="325" />
+						<Offset x="385" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -513,7 +504,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="425" y="325" />
+						<Offset x="450" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -531,7 +522,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="490" y="325" />
+						<Offset x="515" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -550,7 +541,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="575" y="325" />
+						<Offset x="600" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -568,7 +559,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="660" y="325" />
+						<Offset x="685" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -587,7 +578,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="725" y="325" />
+						<Offset x="750" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -605,7 +596,7 @@
 				</Size>
 				<Anchors>
 					<Anchor point="bottomleft">
-						<Offset x="810" y="325" />
+						<Offset x="835" y="325" />
 					</Anchor>
 				</Anchors>
 
@@ -623,7 +614,7 @@
 					<AbsDimension x="800" y="300"/>
 				</Size>
 				<Anchors>
-					<Anchor point="bottomleft" x="80" y="20"/>
+					<Anchor point="bottomleft" x="105" y="20"/>
 				</Anchors>
 
 				<Backdrop edgeFile="Interface\DialogFrame\UI-DialogBox-Border">

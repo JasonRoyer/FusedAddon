@@ -475,7 +475,7 @@
 
 				<Scripts>
 					<OnClick>
-						
+						fusedAddon:sort(FC_Utils.ilvlCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -493,7 +493,7 @@
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.scoreCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -511,7 +511,7 @@
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.itemCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -529,7 +529,7 @@
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.rankCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -548,7 +548,7 @@
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.responseCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -566,7 +566,7 @@
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.noteCompare);
 					</OnClick>
 				</Scripts>
 			</Button>
@@ -603,7 +603,7 @@
 
 				<Scripts>
 					<OnClick>
-
+						fusedAddon:sort(FC_Utils.votesCompare);
 					</OnClick>
 				</Scripts>
 			</Button>

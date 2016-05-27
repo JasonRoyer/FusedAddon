@@ -994,44 +994,45 @@ function fusedAddon:findItem(itemLink)
   return nil;
 end
 function fusedAddon:sort( sortFunc)
-  local table = currentItem["responses"];
-  -- if the table is alreaded sorted isSorted will stay true
-  local isSorted = true;
+	if currentItem then
+		  local table = currentItem["responses"];
+		  -- if the table is alreaded sorted isSorted will stay true
+		  local isSorted = true;
 
-  if optionsTable == nil then
-    for i=1, #table-1 do
-      local j=i;
-      while j > 0 and sortFunc(table[j], table[j+1]) do
-        isSorted = false;
-        local temp = table[j];
-        table[j] = table[j+1];
-        table[j+1] = temp;
-        j=j-1;
-      end
-    end
+		  if optionsTable == nil then
+			for i=1, #table-1 do
+			  local j=i;
+			  while j > 0 and sortFunc(table[j], table[j+1]) do
+				isSorted = false;
+				local temp = table[j];
+				table[j] = table[j+1];
+				table[j+1] = temp;
+				j=j-1;
+			  end
+			end
 
-  else
+		  else
 
-    for i=1, #table-1 do
-      local j=i;
-      while j > 0 and sortFunc(table[j], table[j+1], optionsTable) do
-        isSorted = false;
-        local temp = table[j];
-        table[j] = table[j+1];
-        table[j+1] = temp;
-        j=j-1;
-      end
-    end
-  end
-  -- if it was already sorted reverse the list
-  if isSorted then
-    for i=1, #table/2 do
-      local temp = table[i];
-      table[i] = table[#table - (i-1)]
-      table[#table - (i-1)] = temp;
-    end
-  end
-
+			for i=1, #table-1 do
+			  local j=i;
+			  while j > 0 and sortFunc(table[j], table[j+1], optionsTable) do
+				isSorted = false;
+				local temp = table[j];
+				table[j] = table[j+1];
+				table[j+1] = temp;
+				j=j-1;
+			  end
+			end
+		  end
+		  -- if it was already sorted reverse the list
+		  if isSorted then
+			for i=1, #table/2 do
+			  local temp = table[i];
+			  table[i] = table[#table - (i-1)]
+			  table[#table - (i-1)] = temp;
+			end
+		  end
+	end
 end
 function fusedAddon:addItem(itemLink)
   local itemName, _ , itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture = GetItemInfo(itemLink);

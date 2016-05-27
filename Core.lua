@@ -427,13 +427,15 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
 			end
 		elseif payload["type"] == "response" then
 		
-		
+				print("got ack response from " .. sender)
 			  local index = 0;
 			  local removeList= {};
 			  for i=1, #myResponseTable do
 				if myResponseTable[i]["response"]["itemLink"] == payload["item"] then
+					print("found item " .. myResponseTable[i]["response"]["itemLink"])
 					for k=1, #myResponseTable[i]["sendList"] do
 						if myResponseTable[i]["sendList"][k] == sender then
+							print("found councilMember" .. myResponseTable[i]["sendList"][k])
 							index = k;
 						end
 					end
@@ -816,7 +818,7 @@ function fusedAddon:createResponseTimer(tempTable)
 			end
 			if tempTable["count"] == 4 then
 				print("stopping response timer")
-			  self:CancelTimer(responseTimer);
+			  self:CancelTimer(tempTable["timer"]);
 			  local index = 0;
 			  for i=1, #myResponseTable do
 				if myResponseTable[i]["response"]["itemLink"] == tempTable["response"]["itemLink"] and myResponseTable[i]["response"]["player"]["name"] == tempTable["response"]["player"]["name"] then
@@ -831,7 +833,6 @@ function fusedAddon:createResponseTimer(tempTable)
 		  
 		  
 		  end, 2);
-		  return responseTimer;
 end
 
 local INVTYPE_Slots = {

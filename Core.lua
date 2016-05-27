@@ -9,6 +9,7 @@ local timerCount;
 local timer;
 local popupFrame;
 local popupItems = {};
+local testing = false;
 
 --Core stuff
 local itemBank;
@@ -343,6 +344,7 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
         local ack = {cmd="ack", id=0};
         local serializedAck = fusedAddon:Serialize(ack);
         fusedAddon:SendCommMessage(addonPrefix, serializedAck, "WHISPER", sender);
+		print("sending ack")
       elseif payload["cmd"] == "response" then
 
 
@@ -388,6 +390,7 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
             index = i;
           end
         end
+		-- repository might now be working
         if index > 0 then
 			print("removing " .. sender)
           table.remove(eleigableLooterse, index);
@@ -812,6 +815,7 @@ function fusedAddon:getPlayersCurrentItem(item)
 end
 function fusedAddon:test(itemTable)
   mainFrame:Show();
+  testing = true;
   for i=1, #itemTable do
     local item = fusedAddon:findItem(itemTable[i]);
     if item then
@@ -821,16 +825,24 @@ function fusedAddon:test(itemTable)
     end
 
   end
-  for i=1, 40 do
-    if GetMasterLootCandidate(i) then
-      eleigableLooters ={};
-      table.insert(eleigableLooters, GetMasterLootCandidate(i));
-    end
-  end
+  
+	-- takes loot slot and player index in the raid need to also make a tester
+	if testing then
+		for i=1, GetNumGroupMembers() do
+			table.insert(eleigableLooters,GetRaidRosterInfo(i));
+		end
+	else
+		if GetMasterLootCandidate(i) then
+		  eleigableLooters ={};
+		  table.insert(eleigableLooters, GetMasterLootCandidate(i));
+		end
+	end
+    
   -- send off list
   local payload = {cmd="itemBank", itemBank= itemBank , options = dbProfile.options};
   local serializedPayload = fusedAddon:Serialize(payload);
   fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "RAID");
+  
   timer = self:ScheduleRepeatingTimer(function() 
     timerCount = timerCount +1;
     for i=1, #eleigableLooters do

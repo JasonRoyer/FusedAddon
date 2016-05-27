@@ -821,7 +821,7 @@ function fusedAddon:createResponseTimer(tempTable)
 			  local index = 0;
 			  for i=1, #myResponseTable do
 				if myResponseTable[i]["response"]["itemLink"] == tempTable["response"]["itemLink"] and myResponseTable[i]["response"]["player"]["name"] == tempTable["response"]["player"]["name"] then
-					print("removing response from send table .. "myResponseTable[i]["response"]["itemLink"] .. " " .. myResponseTable[i]["response"]["player"]["name"])
+					print("removing response from send table " .. myResponseTable[i]["response"]["itemLink"] .. " " .. myResponseTable[i]["response"]["player"]["name"])
 					index = i;
 				end
 			  end

@@ -4,12 +4,15 @@ local mainFrame;
 local itemsWindow;
 local responseW
 local currentItem;
-local eleigableLooters;
+local eleigableLooters = {};
 local timerCount;
 local timer;
 local popupFrame;
 local popupItems = {};
 local testing = false;
+local timerCount =0;
+local myResponseTable ={};
+local responseTimers = {};
 
 --Core stuff
 local itemBank;
@@ -324,6 +327,22 @@ function fusedAddon:OnEnable()
 
 end
 
+
+function fusedAddon:playerInCouncil()
+	if options then
+		for i=1, #options["lootCouncilMembers"] do
+			if UnitName("player") == options["lootCouncilMembers"][i] then
+				return true;
+				
+			end
+		end
+	else
+	return false
+	
+	end
+
+end
+
 function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
   if prefix == addonPrefix then
     local success, payload = self:Deserialize(message);
@@ -331,70 +350,118 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
 
     if success then
       if payload["cmd"] == "itemBank" then
-        if sender == UnitName("player") or true then
+        if fusedAddon:playerInCouncil() then
+			mainFrame:Show();
+			for i=1, #itemTable do
+				local item = fusedAddon:findItem(itemTable[i]);
+				if item then
+				  item["itemStackCount"] = item["itemStackCount"] +1;
+				else
+				  fusedAddon:addItem(itemTable[i]);
+				end
 
+			end
+		end
           for i=1, #payload["itemBank"] do
-            -- query them all
-
-            options= payload["options"];
             table.insert(popupItems, payload["itemBank"][i]);
           end
+			options= payload["options"];
 			fusedAddon:popupUpdate();
-        end
-        local ack = {cmd="ack", id=0};
+        
+        local ack = {cmd="ack", type="itemBank"};
         local serializedAck = fusedAddon:Serialize(ack);
         fusedAddon:SendCommMessage(addonPrefix, serializedAck, "WHISPER", sender);
 		print("sending ack")
       elseif payload["cmd"] == "response" then
 
-
-        local item = fusedAddon:findItem(payload["response"]["itemLink"]);
-        table.insert(item["responses"], payload["response"]);
-
+		if fusedAddon:playerInCouncil() then
+			local item = fusedAddon:findItem(payload["response"]["itemLink"]);
+			table.insert(item["responses"], payload["response"]);
+			
+			local ack = {cmd="ack", type="response", item = payload["response"]["itemLink"]};
+			local serializedAck = fusedAddon:Serialize(ack);
+			fusedAddon:SendCommMessage(addonPrefix, serializedAck, "WHISPER", sender);
+		end
+		
       elseif payload["cmd"] == "vote" then
-        print(payload["vote"]["item"]["itemLink"])
-        local item = fusedAddon:findItem(payload["vote"]["item"]["itemLink"]);
-        if item then
-          for i=1, #item["responses"]do
-            if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
-              table.insert(item["responses"][i]["votes"], payload["vote"]["from"]);
-            end
-          end
-        end
+        if fusedAddon:playerInCouncil() then
+			local item = fusedAddon:findItem(payload["vote"]["item"]["itemLink"]);
+			if item then
+			  for i=1, #item["responses"]do
+				if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
+				  table.insert(item["responses"][i]["votes"], payload["vote"]["from"]);
+				end
+			  end
+			end
+		end
       elseif payload["cmd"] == "unvote" then
-        local item = fusedAddon:findItem(payload["vote"]["item"]["itemLink"]);
-        print(payload["vote"]["item"]["itemName"])
-        local index;
-        if item then
-          for i=1, #item["responses"]do
-            print(item["responses"][i]["player"]["name"] .. " " .. payload["vote"]["to"])
-            if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
-              for k=1, #item["responses"][i]["votes"] do
-                if item["responses"][i]["votes"][k] == payload["vote"]["from"] then
-                  index =k;
-                  print(k)
-                end
-              end
-              if index then
-                table.remove(item["responses"][i]["votes"], index);
-              end
-            end
+		if fusedAddon:playerInCouncil() then
+			local item = fusedAddon:findItem(payload["vote"]["item"]["itemLink"]);
+			print(payload["vote"]["item"]["itemName"])
+			local index;
+			if item then
+			  for i=1, #item["responses"]do
+				print(item["responses"][i]["player"]["name"] .. " " .. payload["vote"]["to"])
+				if item["responses"][i]["player"]["name"] == payload["vote"]["to"] then
+				  for k=1, #item["responses"][i]["votes"] do
+					if item["responses"][i]["votes"][k] == payload["vote"]["from"] then
+					  index =k;
+					  print(k)
+					end
+				  end
+				  if index then
+					table.remove(item["responses"][i]["votes"], index);
+				  end
+				end
 
-          end
-       
-        end
+			  end
+		   
+			end
+		end
       elseif payload["cmd"] =="ack" then
-        local index = 0;
-        for i =1, #elegableLooters do
-          if eleigableLooters == sender then
-            index = i;
-          end
-        end
-		-- repository might now be working
-        if index > 0 then
-			print("removing " .. sender)
-          table.remove(eleigableLooterse, index);
-        end
+		if payload["type"] == "itemBank" then
+			local index = 0;
+			for i =1, #eleigableLooters do
+			  if eleigableLooters[i] == sender then
+				index = i;
+			  end
+			end
+			-- repository might now be working
+			if index > 0 then
+				print("removing " .. sender)
+			  table.remove(eleigableLooters, index);
+			end
+		elseif payload["type"] == "response" then
+		
+		
+			  local index = 0;
+			  local removeList= {};
+			  for i=1, #myResponseTable do
+				if myResponseTable[i]["response"]["itemLink"] == payload["item"] then
+					for k=1, #myResponseTable[i]["sendList"] do
+						if myResponseTable[i]["sendList"][k] == sender then
+							index = k;
+						end
+					end
+					if index > 0 then
+						table.remove(myResponseTable[i]["sendList"], index);
+					end
+				end
+				
+			  end
+			  for i=1, #myResponseTable do
+				if #myResponseTable[i]["sendList"] == 0 then
+					table.insert(removeList, i);
+				end
+			  end
+			  for i=1, #removeList do
+				table.remove(myResponseTable, removeList[i]);
+			  end
+			  removeList = {};
+			  -- WTB iterator so can safly remove while iterating over
+		
+		end
+        
         
       end -- end if cmd == ......
       fusedAddon:update();
@@ -711,21 +778,66 @@ function fusedAddon:populatePopup(index, item)
           response = options["responseButtonNames"][i],
           note = getglobal("FC_Popup" .. index .. "NoteBox"):GetText(),
           currentItems = fusedAddon:getPlayersCurrentItem(item),
-          votes ={}
+          votes ={}, 
+		  
         };
         -- popup clean up
         table.remove(popupItems, index);
         for k=1, 7 do
           frame:GetParent().buttons[k]:Hide();
         end
+		
+		local tempTable = {timer = 0, count =0, response = response, sendList= options["lootCouncilMembers"]};
+		table.insert(myResponseTable, tempTable);
+		
+		
         frame:GetParent():Hide();
         local payload = {cmd="response", response= response };
         local serializedPayload = fusedAddon:Serialize(payload);
         fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "RAID");
-        fusedAddon:update();
+		
+		fusedAddon:createResponseTimer(tempTable);
+		
+		
+        fusedAddon:popupUpdate();
 
     end);
   end
+end
+
+function fusedAddon:createResponseTimer(tempTable)
+
+	tempTable["timer"] = self:ScheduleRepeatingTimer(function() 
+			tempTable["count"] = tempTable["count"] +1;
+			for i=1, #tempTable["sendList"] do
+				
+					for k=1, GetNumGroupMembers() do
+						local name, _, _,_,_,_,_,online = GetRaidRosterInfo(k);
+						if tempTable["sendList"][i] == name and online then
+							local payload = {cmd="response", response= tempTable["response"] };
+							local serializedPayload = fusedAddon:Serialize(payload);
+							fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "WHISPER", tempTable["sendList"][i]);
+						end
+					end
+			end
+			if tempTable["count"] == 4 then
+				print("stopping response timer")
+			  self:CancelTimer(responseTimer);
+			  local index = 0;
+			  for i=1, #myResponseTable do
+				if myResponseTable[i]["response"]["itemLink"] == tempTable["response"]["itemLink"] and myResponseTable[i]["response"]["player"]["name"] == tempTable["response"]["player"]["name"] then
+					index = i;
+				end
+			  end
+			  if index > 0 then
+				table.remove(myResponseTable, index);
+			  end
+			end
+		  
+		  
+		  
+		  end, 2);
+		  return responseTimer;
 end
 
 local INVTYPE_Slots = {
@@ -816,6 +928,7 @@ end
 function fusedAddon:test(itemTable)
   mainFrame:Show();
   testing = true;
+  eleigableLooters = {};
   for i=1, #itemTable do
     local item = fusedAddon:findItem(itemTable[i]);
     if item then
@@ -829,7 +942,8 @@ function fusedAddon:test(itemTable)
 	-- takes loot slot and player index in the raid need to also make a tester
 	if testing then
 		for i=1, GetNumGroupMembers() do
-			table.insert(eleigableLooters,GetRaidRosterInfo(i));
+			local name = select(1,GetRaidRosterInfo(i));
+			table.insert(eleigableLooters, name );
 		end
 	else
 		if GetMasterLootCandidate(i) then
@@ -845,10 +959,21 @@ function fusedAddon:test(itemTable)
   
   timer = self:ScheduleRepeatingTimer(function() 
     timerCount = timerCount +1;
+	print(#eleigableLooters)
     for i=1, #eleigableLooters do
-      fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "WHISPER", eleigableLooters[i]);
+		print("sending msg to " .. eleigableLooters[i])
+		for k=1, GetNumGroupMembers() do
+			local name, _, _,_,_,_,_,online = GetRaidRosterInfo(i);
+			if eleigableLooters[i] == name and online then
+				fusedAddon:SendCommMessage(addonPrefix,serializedPayload, "WHISPER", eleigableLooters[i]);
+			end
+		end
+      
     end
     if timerCount == 4 then
+		eleigableLooters ={};
+		timerCount =0;
+		print("stopping timer")
       self:CancelTimer(timer);
     end
   

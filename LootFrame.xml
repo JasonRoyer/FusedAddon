@@ -726,18 +726,7 @@
 		<Size>
 			<AbsDimension x="900" y="100"/>
 		</Size>
-	<Backdrop bgFile="Interface\DialogFrame\UI-DialogBox-Background" edgeFile="Interface\DialogFrame\UI-DialogBox-Border" tile="true">
-			<EdgeSize>
-				<AbsValue val="16"/>
-			</EdgeSize>
-			<TileSize>
-				<AbsValue val="32" />
-			</TileSize>
-			<BackgroundInsets>
-				<AbsInset left="5" right="5" top="5" bottom="5" />
-			</BackgroundInsets>
-
-		</Backdrop>
+	
 		<Anchors>
 			<Anchor point="CENTER"/>
 		</Anchors>

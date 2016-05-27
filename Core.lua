@@ -350,6 +350,7 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
 
     if success then
       if payload["cmd"] == "itemBank" then
+		options= payload["options"];
         if fusedAddon:playerInCouncil() then
 			mainFrame:Show();
 			for i=1, #itemTable do
@@ -365,7 +366,7 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
           for i=1, #payload["itemBank"] do
             table.insert(popupItems, payload["itemBank"][i]);
           end
-			options= payload["options"];
+			
 			fusedAddon:popupUpdate();
         
         local ack = {cmd="ack", type="itemBank"};

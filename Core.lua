@@ -353,12 +353,12 @@ function fusedAddon:CommHandler(prefix, message, distrubtuion, sender)
 		options= payload["options"];
         if fusedAddon:playerInCouncil() then
 			mainFrame:Show();
-			for i=1, #itemTable do
-				local item = fusedAddon:findItem(itemTable[i]);
+			for i=1, #payload["itemBank"] do
+				local item = fusedAddon:findItem(payload["itemBank"][i]);
 				if item then
 				  item["itemStackCount"] = item["itemStackCount"] +1;
 				else
-				  fusedAddon:addItem(itemTable[i]);
+				  fusedAddon:addItem(payload["itemBank"][i]);
 				end
 
 			end

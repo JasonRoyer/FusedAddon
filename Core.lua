@@ -594,7 +594,6 @@ local function updateEntrys()
 
 
     getglobal("FC_entry" .. i .. "ClassIcon"):SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES");
-    print(currentItem["responses"][i]["player"]["class"]);
     local coords = CLASS_ICON_TCOORDS[currentItem["responses"][i]["player"]["class"]];
     getglobal("FC_entry" .. i .. "ClassIcon"):SetTexCoord(unpack(coords));
 
@@ -817,11 +816,12 @@ function fusedAddon:createResponseTimer(tempTable)
 					end
 			end
 			if tempTable["count"] == 4 then
-				print("stopping response timer")
+				print("stopping response timer " .. tempTable["timer"])
 			  self:CancelTimer(tempTable["timer"]);
 			  local index = 0;
 			  for i=1, #myResponseTable do
 				if myResponseTable[i]["response"]["itemLink"] == tempTable["response"]["itemLink"] and myResponseTable[i]["response"]["player"]["name"] == tempTable["response"]["player"]["name"] then
+					print("removing response from send table .. "myResponseTable[i]["response"]["itemLink"] .. " " .. myResponseTable[i]["response"]["player"]["name"])
 					index = i;
 				end
 			  end
